@@ -442,6 +442,7 @@ textarea{resize:vertical;min-height:60px;}
           <input type="password" id="cfg-aikey" placeholder="sk-ant-..."/>
         </div>
         <button class="btn" onclick="guardarUsuario()" style="margin-top:4px;">Guardar</button>
+        <button class="btn" onclick="testIA()" style="margin-top:6px;">🔌 Probar conexión IA</button>
       </div>
       <div class="card">
         <div class="card-title">Compartir obra</div>
@@ -869,7 +870,22 @@ window.guardarUsuario = function() {
   localStorage.setItem('om_usuario', usuario);
   localStorage.setItem('om_aikey', aiKey);
   document.getElementById('usuario-label').textContent = usuario;
-  showToast('Usuario guardado ✓');
+  showToast('✓ Guardado — ya podés usar la IA');
+}
+
+window.testIA = async function() {
+  if(!aiKey){ showToast('Primero guardá tu API Key'); return; }
+  showToast('Probando conexión...');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':aiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:50,messages:[{role:'user',content:'Respondé solo: OK'}]})
+    });
+    const data = await res.json();
+    if(data.content?.[0]?.text) showToast('✓ IA conectada correctamente');
+    else showToast('Error: ' + (data.error?.message||'sin respuesta'));
+  } catch(e) { showToast('Error de red: '+e.message); }
 }
 
 window.copiarLink = function() {
