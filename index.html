@@ -172,8 +172,8 @@ textarea{resize:vertical;min-height:60px;}
       <input type="text" id="setup-fbkey" placeholder="AIzaSy..." />
     </div>
     <div class="form-group">
-      <label>API Key de Claude (Anthropic)</label>
-      <input type="text" id="setup-aikey" placeholder="sk-ant-..." />
+      <label>API Key de Groq (gratis)</label>
+      <input type="text" id="setup-aikey" placeholder="gsk_..." />
     </div>
     <button class="btn primary" onclick="iniciarApp()">Entrar a la obra</button>
     <details style="text-align:left;margin-top:12px;">
@@ -438,8 +438,8 @@ textarea{resize:vertical;min-height:60px;}
           <input type="text" id="cfg-usuario" placeholder="Tu nombre"/>
         </div>
         <div class="form-group">
-          <label>API Key de Claude (Anthropic)</label>
-          <input type="password" id="cfg-aikey" placeholder="sk-ant-..."/>
+          <label>API Key de Groq (gratis)</label>
+          <input type="password" id="cfg-aikey" placeholder="gsk_..."/>
         </div>
         <button class="btn" onclick="guardarUsuario()" style="margin-top:4px;">Guardar</button>
         <button class="btn" onclick="testIA()" style="margin-top:6px;">🔌 Probar conexión IA</button>
@@ -877,13 +877,13 @@ window.testIA = async function() {
   if(!aiKey){ showToast('Primero guardá tu API Key'); return; }
   showToast('Probando conexión...');
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':aiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:50,messages:[{role:'user',content:'Respondé solo: OK'}]})
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+aiKey},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:50,messages:[{role:'user',content:'Respondé solo: OK'}]})
     });
     const data = await res.json();
-    if(data.content?.[0]?.text) showToast('✓ IA conectada correctamente');
+    if(data.choices?.[0]?.message?.content) showToast('✓ IA conectada correctamente');
     else showToast('Error: ' + (data.error?.message||'sin respuesta'));
   } catch(e) { showToast('Error de red: '+e.message); }
 }
@@ -905,7 +905,7 @@ window.sendAI = async function(msg) {
   const input = document.getElementById('ai-input');
   const texto = msg || input.value.trim();
   if(!texto) return;
-  if(!aiKey){ showToast('Configurá tu API Key de Claude en ⚙️'); return; }
+  if(!aiKey){ showToast('Configurá tu API Key de Groq en ⚙️'); return; }
   input.value='';
   addAIMsg('user', texto);
   const tid = 'think-'+Date.now();
@@ -923,13 +923,14 @@ PRESUPUESTO: ${config.presupuesto>0?fmt(config.presupuesto):'No definido'}, Rest
 PERSONAL: ${operarios.length} operarios. Presentes hoy: ${pres.join(', ')||'ninguno'}. Ausentes: ${aus.join(', ')||'ninguno'}.
 FOTOS: ${fotos.length}. TAREAS: ${tareas.length} (${tareas.filter(t=>t.estado!=='completada').length} pendientes).
 Respondé en español argentino, conciso y práctico.`;
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
+    const messages = [{role:'system',content:systemPrompt},...aiHistory.slice(-12)];
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':aiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:systemPrompt,messages:aiHistory.slice(-12)})
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+aiKey},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:800,messages})
     });
     const data = await res.json();
-    const reply = data.content?.[0]?.text||data.error?.message||'No pude obtener respuesta.';
+    const reply = data.choices?.[0]?.message?.content||data.error?.message||'No pude obtener respuesta.';
     removeAIMsg(tid); addAIMsg('assistant',reply);
     aiHistory.push({role:'assistant',content:reply});
     if(aiHistory.length>20) aiHistory=aiHistory.slice(-20);
