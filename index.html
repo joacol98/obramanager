@@ -200,11 +200,14 @@ select option{background:var(--bg3);}
         <div class="card-title">Crear nueva obra</div>
         <div class="form-group"><label>Nombre de la obra</label><input type="text" id="nueva-obra-nombre" placeholder="Ej: Casa Familia García"/></div>
         <div class="form-group"><label>Dirección</label><input type="text" id="nueva-obra-dir" placeholder="Opcional"/></div>
+        <div class="form-group"><label>PIN de acceso (4 dígitos) *</label><input type="number" id="nueva-obra-pin" placeholder="Ej: 1234" maxlength="4" style="letter-spacing:6px;font-size:18px;font-family:monospace;"/></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:-6px;margin-bottom:8px;">Solo quienes tengan este PIN pueden unirse a la obra</div>
         <button class="btn primary" onclick="crearObra()">+ Crear obra</button>
       </div>
       <div class="card">
         <div class="card-title">Unirse a una obra</div>
         <div class="form-group"><label>Código de la obra</label><input type="text" id="join-codigo" placeholder="Ej: OBRA-4521" style="text-transform:uppercase;letter-spacing:2px;font-family:monospace;font-size:16px;"/></div>
+        <div class="form-group"><label>PIN de acceso</label><input type="number" id="join-pin" placeholder="0000" style="letter-spacing:6px;font-size:18px;font-family:monospace;"/></div>
         <button class="btn" onclick="unirseObra()">Unirse a esta obra</button>
       </div>
     </div>
@@ -410,11 +413,21 @@ select option{background:var(--bg3);}
       </div>
       <div class="card">
         <div class="card-title">Compartir obra</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Código para que otros se unan:</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Código de obra:</div>
         <div style="font-family:monospace;font-size:22px;font-weight:700;color:var(--accent);letter-spacing:3px;text-align:center;padding:12px;background:var(--bg3);border-radius:8px;" id="share-code"></div>
-        <button class="btn" onclick="copiarCodigo()" style="margin-top:8px;">📋 Copiar código</button>
-        <div style="font-size:12px;color:var(--muted);margin-top:8px;">O compartí el link directo:</div>
-        <div id="share-link" style="font-size:11px;color:var(--accent);word-break:break-all;margin-top:4px;"></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px;padding:10px;background:var(--bg3);border-radius:8px;">
+          <div style="flex:1;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:2px;">PIN de acceso</div>
+            <div style="font-family:monospace;font-size:20px;font-weight:700;color:var(--accent);letter-spacing:4px;" id="share-pin">----</div>
+          </div>
+          <button class="btn sm" onclick="cambiarPin()" style="white-space:nowrap;">Cambiar PIN</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Compartí el código + PIN con tu equipo para que puedan unirse.</div>
+        <button class="btn" onclick="copiarCodigo()" style="margin-top:8px;">📋 Copiar código de obra</button>
+        <div style="font-size:12px;color:var(--muted);margin-top:10px;">Link completo (incluye configuración):</div>
+        <div id="share-link" style="font-size:10px;color:var(--accent);word-break:break-all;margin-top:4px;padding:8px;background:var(--bg3);border-radius:6px;"></div>
+        <button class="btn primary" onclick="copiarLinkCompleto()" style="margin-top:8px;">🔗 Copiar link completo para compartir</button>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5;">La otra persona solo necesita abrir este link y entrar con Google. No necesita configurar nada.</div>
       </div>
       <button class="btn danger" onclick="logout()" style="margin-top:4px;">Cerrar sesión</button>
     </div>
@@ -594,13 +607,15 @@ function loadMisObras() {
 
 window.crearObra = async function() {
   const nombre = document.getElementById('nueva-obra-nombre').value.trim();
+  const pin = document.getElementById('nueva-obra-pin').value.trim();
   if(!nombre){ showToast('Poné un nombre para la obra'); return; }
+  if(!pin||pin.length<4){ showToast('El PIN debe tener 4 dígitos'); return; }
   const uid = currentUser.uid;
   const obraRef = push(ref(db,'obras'));
   const obraId = obraRef.key;
   await set(ref(db,`obras/${obraId}/config`), {
     nombre, direccion: document.getElementById('nueva-obra-dir').value.trim(),
-    presupuesto:0, creadoPor:uid, fechaCreacion: new Date().toISOString().slice(0,10)
+    presupuesto:0, creadoPor:uid, fechaCreacion: new Date().toISOString().slice(0,10), pin
   });
   await set(ref(db,`obras/${obraId}/miembros/${uid}`), { role:'admin', nombre: currentUser.displayName||currentUser.email, email:currentUser.email, joined: Date.now() });
   await set(ref(db,`usuarios/${uid}/obras/${obraId}`), { role:'admin' });
@@ -621,6 +636,11 @@ window.unirseObra = async function() {
   if(!obraId){ showToast('Código incorrecto'); return; }
   const existeSnap = await get(ref(db,`obras/${obraId}/miembros/${uid}`));
   if(existeSnap.exists()){ entrarObra(obraId, existeSnap.val().role); return; }
+  // Check PIN
+  const pinInput = document.getElementById('join-pin').value.trim();
+  const obraConfigSnap = await get(ref(db,`obras/${obraId}/config`));
+  const obraPin = obraConfigSnap.val()?.pin;
+  if(obraPin && pinInput !== obraPin){ showToast('PIN incorrecto'); return; }
   await set(ref(db,`obras/${obraId}/miembros/${uid}`), { role:'operario', nombre:currentUser.displayName||currentUser.email, email:currentUser.email, joined:Date.now() });
   await set(ref(db,`usuarios/${uid}/obras/${obraId}`), { role:'operario' });
   showToast('Te uniste a la obra ✓');
@@ -642,7 +662,11 @@ window.entrarObra = function(obraId, role) {
   loadAIChips();
   // Share info
   document.getElementById('share-code').textContent = 'OBRA-' + obraId.slice(-8).toUpperCase();
-  document.getElementById('share-link').textContent = window.location.href;
+  const _fbId=localStorage.getItem('om_fbid'); const _fbKey=localStorage.getItem('om_fbkey');
+  const _base=window.location.href.split('?')[0];
+  document.getElementById('share-link').textContent = `${_base}?p=${encodeURIComponent(_fbId||'')}&k=${encodeURIComponent(_fbKey||'')}`;
+  // Load PIN
+  get(ref(db,`obras/${obraId}/config`)).then(s=>{ const p=s.val()?.pin; if(p) document.getElementById('share-pin').textContent=p; });
   // Config user info
   document.getElementById('cfg-user-info').textContent = (currentUser.displayName||currentUser.email) + ' · ' + (roleLabel[role]||role);
   document.getElementById('cfg-groq').value = groqKey;
@@ -859,9 +883,26 @@ window.guardarGroqKey=function(){
   showToast('Key guardada ✓');
 }
 
+window.cambiarPin=async function(){
+  if(userRole!=='admin'){showToast('Solo el admin puede cambiar el PIN');return;}
+  const pin=prompt('Nuevo PIN (4 dígitos):');
+  if(!pin||pin.length!==4||isNaN(pin)){showToast('PIN inválido — debe ser 4 dígitos');return;}
+  await update(obraRef('config'),{pin});
+  document.getElementById('share-pin').textContent=pin;
+  showToast('PIN actualizado ✓');
+}
+
 window.copiarCodigo=function(){
   const code=document.getElementById('share-code').textContent;
   navigator.clipboard.writeText(code).then(()=>showToast('Código copiado ✓'));
+}
+
+window.copiarLinkCompleto=function(){
+  const fbId=localStorage.getItem('om_fbid');
+  const fbKey=localStorage.getItem('om_fbkey');
+  const base=window.location.href.split('?')[0];
+  const link=`${base}?p=${encodeURIComponent(fbId)}&k=${encodeURIComponent(fbKey)}`;
+  navigator.clipboard.writeText(link).then(()=>showToast('Link copiado ✓'));
 }
 
 window.testIA=async function(){
@@ -916,6 +957,15 @@ function addAIMsg(role,text,id,thinking){
 function removeAIMsg(id){const el=document.getElementById(id);if(el)el.remove();}
 
 // ═══ AUTO LOGIN ═══
+// Check URL params first (shared links)
+const urlParams = new URLSearchParams(window.location.search);
+const urlFbId = urlParams.get('p');
+const urlFbKey = urlParams.get('k');
+if(urlFbId && urlFbKey) {
+  localStorage.setItem('om_fbid', urlFbId);
+  localStorage.setItem('om_fbkey', urlFbKey);
+}
+
 const fbId=localStorage.getItem('om_fbid'); const fbKey=localStorage.getItem('om_fbkey');
 if(fbId&&fbKey){
   document.getElementById('setup-fbid').value=fbId;
