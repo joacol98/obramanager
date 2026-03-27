@@ -172,7 +172,7 @@ textarea{resize:vertical;min-height:60px;}
       <input type="text" id="setup-fbkey" placeholder="AIzaSy..." />
     </div>
     <div class="form-group">
-      <label>API Key Anthropic (opcional, para IA)</label>
+      <label>API Key de Claude (Anthropic)</label>
       <input type="text" id="setup-aikey" placeholder="sk-ant-..." />
     </div>
     <button class="btn primary" onclick="iniciarApp()">Entrar a la obra</button>
@@ -438,7 +438,7 @@ textarea{resize:vertical;min-height:60px;}
           <input type="text" id="cfg-usuario" placeholder="Tu nombre"/>
         </div>
         <div class="form-group">
-          <label>API Key Anthropic (IA)</label>
+          <label>API Key de Claude (Anthropic)</label>
           <input type="password" id="cfg-aikey" placeholder="sk-ant-..."/>
         </div>
         <button class="btn" onclick="guardarUsuario()" style="margin-top:4px;">Guardar</button>
@@ -889,7 +889,7 @@ window.sendAI = async function(msg) {
   const input = document.getElementById('ai-input');
   const texto = msg || input.value.trim();
   if(!texto) return;
-  if(!aiKey){ showToast('Configurá tu API Key de Anthropic en ⚙️'); return; }
+  if(!aiKey){ showToast('Configurá tu API Key de Claude en ⚙️'); return; }
   input.value='';
   addAIMsg('user', texto);
   const tid = 'think-'+Date.now();
@@ -913,7 +913,7 @@ Respondé en español argentino, conciso y práctico.`;
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:systemPrompt,messages:aiHistory.slice(-12)})
     });
     const data = await res.json();
-    const reply = data.content?.[0]?.text||'No pude obtener respuesta.';
+    const reply = data.content?.[0]?.text||data.error?.message||'No pude obtener respuesta.';
     removeAIMsg(tid); addAIMsg('assistant',reply);
     aiHistory.push({role:'assistant',content:reply});
     if(aiHistory.length>20) aiHistory=aiHistory.slice(-20);
