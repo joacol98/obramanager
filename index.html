@@ -168,15 +168,7 @@ select option{background:var(--bg3);}
       <button class="btn primary" onclick="loginEmail()">Entrar</button>
       <button class="btn ghost" onclick="registerEmail()" style="font-size:13px;">Crear cuenta nueva</button>
     </div>
-    <div style="margin-top:16px;">
-      <div class="form-group" style="margin:0;">
-        <input type="text" id="setup-fbid" placeholder="Firebase Project ID" style="font-size:12px;text-align:center;"/>
-      </div>
-      <div class="form-group" style="margin-top:6px;">
-        <input type="text" id="setup-fbkey" placeholder="Firebase API Key" style="font-size:12px;text-align:center;"/>
-      </div>
-      <button class="btn sm ghost" onclick="saveFbConfig()" style="width:100%;margin-top:6px;font-size:12px;">Guardar config Firebase</button>
-    </div>
+
   </div>
 </div>
 
@@ -491,15 +483,7 @@ function initFirebase() {
   } catch(e) { showToast('Error Firebase: '+e.message); return false; }
 }
 
-window.saveFbConfig = function() {
-  const fbId = document.getElementById('setup-fbid').value.trim();
-  const fbKey = document.getElementById('setup-fbkey').value.trim();
-  if(!fbId||!fbKey){ showToast('Completá ambos campos'); return; }
-  localStorage.setItem('om_fbid', fbId);
-  localStorage.setItem('om_fbkey', fbKey);
-  showToast('Configuración guardada — recargá la página');
-  setTimeout(()=>location.reload(), 1500);
-}
+window.saveFbConfig = function() {}
 
 // ═══ AUTH ═══
 window.loginGoogle = async function() {
@@ -662,9 +646,7 @@ window.entrarObra = function(obraId, role) {
   loadAIChips();
   // Share info
   document.getElementById('share-code').textContent = 'OBRA-' + obraId.slice(-8).toUpperCase();
-  const _fbId=localStorage.getItem('om_fbid'); const _fbKey=localStorage.getItem('om_fbkey');
-  const _base=window.location.href.split('?')[0];
-  document.getElementById('share-link').textContent = `${_base}?p=${encodeURIComponent(_fbId||'')}&k=${encodeURIComponent(_fbKey||'')}`;
+  document.getElementById('share-link').textContent = window.location.href.split('?')[0];
   // Load PIN
   get(ref(db,`obras/${obraId}/config`)).then(s=>{ const p=s.val()?.pin; if(p) document.getElementById('share-pin').textContent=p; });
   // Config user info
@@ -898,11 +880,7 @@ window.copiarCodigo=function(){
 }
 
 window.copiarLinkCompleto=function(){
-  const fbId=localStorage.getItem('om_fbid');
-  const fbKey=localStorage.getItem('om_fbkey');
-  const base=window.location.href.split('?')[0];
-  const link=`${base}?p=${encodeURIComponent(fbId)}&k=${encodeURIComponent(fbKey)}`;
-  navigator.clipboard.writeText(link).then(()=>showToast('Link copiado ✓'));
+  navigator.clipboard.writeText(window.location.href.split('?')[0]).then(()=>showToast('Link copiado ✓'));
 }
 
 window.testIA=async function(){
@@ -956,22 +934,14 @@ function addAIMsg(role,text,id,thinking){
 }
 function removeAIMsg(id){const el=document.getElementById(id);if(el)el.remove();}
 
-// ═══ AUTO LOGIN ═══
-// Check URL params first (shared links)
-const urlParams = new URLSearchParams(window.location.search);
-const urlFbId = urlParams.get('p');
-const urlFbKey = urlParams.get('k');
-if(urlFbId && urlFbKey) {
-  localStorage.setItem('om_fbid', urlFbId);
-  localStorage.setItem('om_fbkey', urlFbKey);
-}
+// ═══ CONFIG ═══
+const FIREBASE_PROJECT_ID = 'obraprueba-4cf5e';
+const FIREBASE_API_KEY = 'AIzaSyA7Zwcvor5498zTSegqY-ZQz-HktH1lTJo';
 
-const fbId=localStorage.getItem('om_fbid'); const fbKey=localStorage.getItem('om_fbkey');
-if(fbId&&fbKey){
-  document.getElementById('setup-fbid').value=fbId;
-  document.getElementById('setup-fbkey').value=fbKey;
-  initFirebase();
-}
+// ═══ AUTO LOGIN ═══
+localStorage.setItem('om_fbid', FIREBASE_PROJECT_ID);
+localStorage.setItem('om_fbkey', FIREBASE_API_KEY);
+initFirebase();
 </script>
 </body>
 </html>
