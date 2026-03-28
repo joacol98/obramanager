@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>ObraManager Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#0f0f0f; --bg2:#161616; --bg3:#1e1e1e; --bg4:#262626;
+  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
+  --text:#f0ede8; --muted:#888;
+  --accent:#e8a020; --accent2:#f0c060;
+  --green:#3ecf8e; --red:#f06060; --blue:#60a5fa; --orange:#fb923c;
+  --radius:10px; --radius-lg:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+h1,h2,h3{font-family:'Syne',sans-serif;}
+
+.app{display:flex;flex-direction:column;min-height:100vh;max-width:480px;margin:0 auto;}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-left{display:flex;flex-direction:column;gap:2px;}
+.topbar h2{font-size:16px;font-weight:700;color:var(--accent);}
+.topbar-sub{font-size:11px;color:var(--muted);}
+.content{flex:1;padding:14px;padding-bottom:80px;}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg2);border-top:1px solid var(--border);display:flex;z-index:100;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 2px 6px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-size:9px;font-family:'DM Sans',sans-serif;gap:2px;transition:color 0.15s;}
+.nav-btn svg{width:18px;height:18px;stroke-width:1.8;fill:none;stroke:currentColor;}
+.nav-btn.active{color:var(--accent);}
+
+/* SCREENS */
+.screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:200;overflow-y:auto;}
+.screen.active{display:flex;flex-direction:column;}
+.screen-center{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center;}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;}
+.card-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.metrics.three{grid-template-columns:1fr 1fr 1fr;}
+.metric{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px;}
+.metric-label{font-size:10px;color:var(--muted);margin-bottom:3px;}
+.metric-val{font-size:20px;font-weight:700;font-family:'Syne',sans-serif;}
+.metric-val.accent{color:var(--accent);}
+.metric-val.green{color:var(--green);}
+.metric-val.red{color:var(--red);}
+.metric-val.blue{color:var(--blue);}
+
+/* FORMS */
+.form-group{margin-bottom:10px;}
+.form-row{display:flex;gap:8px;}
+.form-row .form-group{flex:1;}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;}
+input,select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:9px 12px;transition:border-color 0.15s;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
+select option{background:var(--bg3);}
+
+/* BUTTONS */
+.btn{padding:10px 16px;border-radius:var(--radius);border:1px solid var(--border2);background:transparent;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all 0.15s;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:500;}
+.btn.danger{background:rgba(240,96,96,0.12);color:var(--red);border-color:rgba(240,96,96,0.25);}
+.btn.google{background:#fff;color:#333;border-color:#ddd;font-weight:500;}
+.btn.sm{padding:5px 10px;font-size:12px;width:auto;}
+.btn.ghost{border-color:transparent;color:var(--muted);}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;}
+.badge-admin{background:rgba(232,160,32,0.2);color:var(--accent);}
+.badge-capataz{background:rgba(96,165,250,0.15);color:var(--blue);}
+.badge-operario{background:rgba(62,207,142,0.15);color:var(--green);}
+.badge-material{background:rgba(96,165,250,0.15);color:var(--blue);}
+.badge-labor{background:rgba(62,207,142,0.15);color:var(--green);}
+.badge-equip{background:rgba(232,160,32,0.15);color:var(--accent);}
+.badge-other{background:rgba(255,255,255,0.07);color:var(--muted);}
+
+/* LIST */
+.list-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px;}
+.list-item:last-child{border-bottom:none;}
+
+/* AVATAR */
+.avatar{width:34px;height:34px;border-radius:50%;background:rgba(232,160,32,0.15);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
+.avatar img{width:34px;height:34px;border-radius:50%;object-fit:cover;}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:12px;}
+.tab{flex:1;padding:7px;text-align:center;font-size:12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;}
+.tab.active{background:rgba(232,160,32,0.15);color:var(--accent);border-color:rgba(232,160,32,0.3);}
+
+/* ATTENDANCE */
+.att-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);}
+.att-row:last-child{border-bottom:none;}
+.att-btns{display:flex;gap:3px;margin-left:auto;}
+.att-btn{padding:4px 7px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;}
+.att-btn.present{background:rgba(62,207,142,0.15);color:var(--green);border-color:rgba(62,207,142,0.3);}
+.att-btn.half{background:rgba(232,160,32,0.15);color:var(--accent);border-color:rgba(232,160,32,0.3);}
+.att-btn.absent{background:rgba(240,96,96,0.15);color:var(--red);border-color:rgba(240,96,96,0.3);}
+
+/* OBRA CARD */
+.obra-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:10px;cursor:pointer;transition:border-color 0.15s;}
+.obra-card:hover{border-color:var(--border2);}
+.obra-card.selected{border-color:var(--accent);}
+.obra-code{font-family:monospace;font-size:18px;font-weight:700;color:var(--accent);letter-spacing:2px;}
+
+/* AI */
+.ai-messages{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;}
+.ai-msg{padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.55;max-width:88%;}
+.ai-msg.user{background:rgba(232,160,32,0.15);color:var(--text);align-self:flex-end;}
+.ai-msg.assistant{background:var(--bg3);color:var(--text);align-self:flex-start;border:1px solid var(--border);}
+.ai-msg.thinking{color:var(--muted);font-style:italic;}
+.ai-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
+.ai-chip{padding:4px 10px;border-radius:20px;font-size:11px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;}
+.ai-input-row{display:flex;gap:6px;}
+.ai-input-row input{flex:1;font-size:13px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:86px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:9px 16px;border-radius:20px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+
+/* ROLE BADGE */
+.role-tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;}
+
+/* SECTION */
+.section{display:none;}
+.section.active{display:block;}
+
+/* PHOTO GRID */
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.photo-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.photo-card img{width:100%;height:100px;object-fit:cover;display:block;}
+.photo-meta{padding:5px 7px;background:var(--bg3);font-size:11px;color:var(--muted);}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px;}
+
+/* PRES BAR */
+.pres-bar-track{height:7px;background:var(--bg4);border-radius:4px;overflow:hidden;margin:4px 0;}
+.pres-bar-fill{height:100%;border-radius:4px;transition:width 0.4s;}
+
+.divider{height:1px;background:var(--border);margin:10px 0;}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══ SCREEN: LOGIN ═══ -->
+<div class="screen active" id="screen-login">
+  <div class="screen-center">
+    <div style="font-size:48px;margin-bottom:12px;">⬛</div>
+    <h1 style="font-size:28px;color:var(--accent);margin-bottom:6px;">ObraManager Pro</h1>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.6;">Gestión de obra colaborativa.<br>Múltiples obras, roles y equipos.</p>
+    <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;">
+      <button class="btn google" onclick="loginGoogle()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Entrar con Google
+      </button>
+      <div style="text-align:center;font-size:12px;color:var(--muted);">— o —</div>
+      <div class="form-group" style="margin:0;">
+        <input type="email" id="login-email" placeholder="Email"/>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <input type="password" id="login-pass" placeholder="Contraseña"/>
+      </div>
+      <button class="btn primary" onclick="loginEmail()">Entrar</button>
+      <button class="btn ghost" onclick="registerEmail()" style="font-size:13px;">Crear cuenta nueva</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ SCREEN: OBRAS ═══ -->
+<div class="screen" id="screen-obras">
+  <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div id="user-avatar-top" class="avatar" style="width:30px;height:30px;font-size:11px;"></div>
+      <div>
+        <div style="font-size:14px;font-weight:600;" id="user-name-top">Usuario</div>
+        <div style="font-size:11px;color:var(--muted);" id="user-email-top"></div>
+      </div>
+    </div>
+    <button class="btn sm ghost" onclick="logout()">Salir</button>
+  </div>
+  <div style="padding:16px;flex:1;overflow-y:auto;">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;">Mis obras</div>
+    <div id="obras-lista"></div>
+    <div style="margin-top:16px;">
+      <div class="card">
+        <div class="card-title">Crear nueva obra</div>
+        <div class="form-group"><label>Nombre de la obra</label><input type="text" id="nueva-obra-nombre" placeholder="Ej: Casa Familia García"/></div>
+        <div class="form-group"><label>Dirección</label><input type="text" id="nueva-obra-dir" placeholder="Opcional"/></div>
+        <div class="form-group"><label>PIN de acceso (4 dígitos) *</label><input type="number" id="nueva-obra-pin" placeholder="Ej: 1234" maxlength="4" style="letter-spacing:6px;font-size:18px;font-family:monospace;"/></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:-6px;margin-bottom:8px;">Solo quienes tengan este PIN pueden unirse a la obra</div>
+        <button class="btn primary" onclick="crearObra()">+ Crear obra</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Unirse a una obra</div>
+        <div class="form-group"><label>Código de la obra</label><input type="text" id="join-codigo" placeholder="Ej: OBRA-4521" style="text-transform:uppercase;letter-spacing:2px;font-family:monospace;font-size:16px;"/></div>
+        <div class="form-group"><label>PIN de acceso</label><input type="number" id="join-pin" placeholder="0000" style="letter-spacing:6px;font-size:18px;font-family:monospace;"/></div>
+        <button class="btn" onclick="unirseObra()">Unirse a esta obra</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP PRINCIPAL ═══ -->
+<div class="app" id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;" id="online-dot"></span>
+        <h2 id="obra-nombre-top">ObraManager</h2>
+      </div>
+      <div class="topbar-sub" id="topbar-sub"></div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button class="btn sm ghost" onclick="volverObras()" style="font-size:11px;padding:4px 8px;">◀ Obras</button>
+      <button class="btn sm ghost" onclick="showSection('config')" style="font-size:18px;padding:4px 6px;">⚙️</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="sec-dashboard">
+      <div class="metrics" id="dash-metrics"></div>
+      <div id="dash-presupuesto"></div>
+      <div class="card" id="dash-dist" style="display:none;">
+        <div class="card-title">Distribución de gastos</div>
+        <div id="dash-bars"></div>
+      </div>
+      <div class="card" id="dash-recientes" style="display:none;">
+        <div class="card-title">Últimos gastos</div>
+        <div id="dash-gastos-list"></div>
+      </div>
+      <div id="dash-tareas-urgentes"></div>
+    </div>
+
+    <!-- GASTOS -->
+    <div class="section" id="sec-gastos">
+      <div id="gastos-form-wrap">
+        <div class="card">
+          <div class="card-title">Nuevo gasto</div>
+          <div class="form-group"><label>Descripción *</label><input type="text" id="g-desc" placeholder="Ej: Cemento portland x20 bolsas"/></div>
+          <div class="form-row">
+            <div class="form-group"><label>Monto ($) *</label><input type="number" id="g-monto" placeholder="0" min="0"/></div>
+            <div class="form-group"><label>Fecha</label><input type="date" id="g-fecha"/></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Categoría</label>
+              <select id="g-cat"><option value="material">Material</option><option value="labor">Mano de obra</option><option value="equip">Equipo</option><option value="other">Otro</option></select>
+            </div>
+            <div class="form-group"><label>Proveedor</label><input type="text" id="g-prov" placeholder="Opcional"/></div>
+          </div>
+          <button class="btn primary" onclick="agregarGasto()">+ Agregar gasto</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div class="card-title" style="margin:0;">Historial</div>
+          <select id="g-filter" onchange="renderGastos()" style="width:auto;font-size:12px;padding:4px 8px;">
+            <option value="">Todos</option>
+            <option value="material">Material</option>
+            <option value="labor">Mano de obra</option>
+            <option value="equip">Equipo</option>
+            <option value="other">Otro</option>
+          </select>
+        </div>
+        <div id="gastos-list"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Sin gastos</div></div>
+      </div>
+    </div>
+
+    <!-- ASISTENCIA -->
+    <div class="section" id="sec-asistencia">
+      <div class="tabs">
+        <button class="tab active" onclick="setAsistTab('hoy',this)">Hoy</button>
+        <button class="tab" onclick="setAsistTab('semana',this)">Semana</button>
+        <button class="tab" onclick="setAsistTab('personal',this)">Personal</button>
+      </div>
+      <div id="asist-hoy">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <button onclick="cambiarFecha(-1)" class="btn sm ghost">‹</button>
+          <input type="date" id="a-fecha" onchange="renderAsistencia()" style="width:auto;font-size:13px;text-align:center;"/>
+          <button onclick="cambiarFecha(1)" class="btn sm ghost">›</button>
+        </div>
+        <div class="metrics three" id="asist-metrics"></div>
+        <div class="card">
+          <div class="card-title">Marcar asistencia</div>
+          <div id="asist-list"><div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">Sin operarios</div></div>
+          <div id="costo-jornales" style="display:none;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px;">
+            <span style="color:var(--muted);">Jornales del día:</span>
+            <span style="color:var(--accent);font-weight:600;" id="costo-jornales-val"></span>
+          </div>
+        </div>
+      </div>
+      <div id="asist-semana" style="display:none;">
+        <div class="card"><div id="semana-tabla"></div></div>
+      </div>
+      <div id="asist-personal" style="display:none;">
+        <div id="personal-form-wrap">
+          <div class="card">
+            <div class="card-title">Agregar operario</div>
+            <div class="form-row">
+              <div class="form-group"><label>Nombre *</label><input type="text" id="w-nombre" placeholder="Nombre completo"/></div>
+              <div class="form-group"><label>Rol</label><input type="text" id="w-rol" placeholder="Albañil, Oficial..."/></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Jornal ($)</label><input type="number" id="w-jornal" placeholder="0"/></div>
+              <div class="form-group"><label>Teléfono</label><input type="tel" id="w-tel" placeholder="351-000-0000"/></div>
+            </div>
+            <button class="btn primary" onclick="agregarOperario()">+ Agregar</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Equipo</div>
+          <div id="operarios-list"><div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">Sin operarios</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOTOS -->
+    <div class="section" id="sec-fotos">
+      <div id="fotos-form-wrap">
+        <div class="card">
+          <div class="card-title">Nueva foto</div>
+          <div class="form-row">
+            <div class="form-group"><label>Descripción *</label><input type="text" id="f-desc" placeholder="Ej: Columna eje A"/></div>
+            <div class="form-group"><label>Sector</label><input type="text" id="f-sector" placeholder="Planta baja..."/></div>
+          </div>
+          <div class="form-group"><label>Foto</label><input type="file" id="f-file" accept="image/*" capture="environment" style="padding:6px;"/></div>
+          <button class="btn primary" onclick="agregarFoto()">📷 Guardar foto</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div class="card-title" style="margin:0;">Galería (<span id="fotos-count">0</span>)</div>
+          <input type="text" id="f-search" placeholder="Buscar..." oninput="renderFotos()" style="width:110px;font-size:12px;padding:4px 8px;"/>
+        </div>
+        <div id="fotos-grid" class="photo-grid"></div>
+        <div id="fotos-empty" style="display:none;text-align:center;padding:20px;color:var(--muted);font-size:13px;">Sin fotos</div>
+      </div>
+    </div>
+
+    <!-- TAREAS -->
+    <div class="section" id="sec-tareas">
+      <div id="tareas-form-wrap">
+        <div class="card">
+          <div class="card-title">Nueva tarea</div>
+          <div class="form-group"><label>Título *</label><input type="text" id="t-titulo" placeholder="Ej: Colocar hierro en losa"/></div>
+          <div class="form-row">
+            <div class="form-group"><label>Prioridad</label>
+              <select id="t-pri"><option value="alta">Alta</option><option value="media" selected>Media</option><option value="baja">Baja</option></select>
+            </div>
+            <div class="form-group"><label>Responsable</label><input type="text" id="t-resp" placeholder="Nombre o rol"/></div>
+          </div>
+          <button class="btn primary" onclick="agregarTarea()">+ Agregar</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Pendientes</div>
+        <div id="tareas-list"><div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">Sin tareas</div></div>
+      </div>
+    </div>
+
+    <!-- IA -->
+    <div class="section" id="sec-ia">
+      <div class="card" style="border-color:rgba(232,160,32,0.2);">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;">
+          <div style="width:30px;height:30px;border-radius:50%;background:rgba(232,160,32,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🤖</div>
+          <div><div style="font-weight:600;font-size:14px;">Asistente IA</div><div style="font-size:11px;color:var(--muted);">Llama 3.3 · Gratis con Groq</div></div>
+        </div>
+        <div class="ai-chips" id="ai-chips"></div>
+        <div class="ai-messages" id="ai-messages">
+          <div class="ai-msg assistant">¡Hola! Soy tu asistente de obra. Preguntame lo que necesités sobre gastos, personal o tareas.</div>
+        </div>
+        <div class="ai-input-row">
+          <input type="text" id="ai-input" placeholder="Preguntá sobre la obra..." onkeydown="if(event.key==='Enter')sendAI()"/>
+          <button class="btn primary sm" onclick="sendAI()">Enviar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="section" id="sec-config">
+      <div class="card">
+        <div class="card-title">Esta obra</div>
+        <div class="form-group"><label>Nombre</label><input type="text" id="cfg-obra"/></div>
+        <div class="form-group"><label>Presupuesto ($)</label><input type="number" id="cfg-presup"/></div>
+        <div class="form-group"><label>Dirección</label><input type="text" id="cfg-dir"/></div>
+        <button class="btn primary" onclick="guardarConfigObra()">Guardar</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Mi cuenta</div>
+        <div id="cfg-user-info" style="margin-bottom:10px;font-size:13px;color:var(--muted);"></div>
+        <div class="form-group"><label>API Key Groq (para IA)</label><input type="password" id="cfg-groq" placeholder="gsk_..."/></div>
+        <button class="btn" onclick="guardarGroqKey()">Guardar key IA</button>
+        <button class="btn" onclick="testIA()" style="margin-top:6px;">🔌 Probar IA</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Equipo de esta obra</div>
+        <div id="cfg-miembros"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Compartir obra</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Código de obra:</div>
+        <div style="font-family:monospace;font-size:22px;font-weight:700;color:var(--accent);letter-spacing:3px;text-align:center;padding:12px;background:var(--bg3);border-radius:8px;" id="share-code"></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px;padding:10px;background:var(--bg3);border-radius:8px;">
+          <div style="flex:1;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:2px;">PIN de acceso</div>
+            <div style="font-family:monospace;font-size:20px;font-weight:700;color:var(--accent);letter-spacing:4px;" id="share-pin">----</div>
+          </div>
+          <button class="btn sm" onclick="cambiarPin()" style="white-space:nowrap;">Cambiar PIN</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Compartí el código + PIN con tu equipo para que puedan unirse.</div>
+        <button class="btn" onclick="copiarCodigo()" style="margin-top:8px;">📋 Copiar código de obra</button>
+        <div style="font-size:12px;color:var(--muted);margin-top:10px;">Link completo (incluye configuración):</div>
+        <div id="share-link" style="font-size:10px;color:var(--accent);word-break:break-all;margin-top:4px;padding:8px;background:var(--bg3);border-radius:6px;"></div>
+        <button class="btn primary" onclick="copiarLinkCompleto()" style="margin-top:8px;">🔗 Copiar link completo para compartir</button>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5;">La otra persona solo necesita abrir este link y entrar con Google. No necesita configurar nada.</div>
+      </div>
+      <button class="btn danger" onclick="logout()" style="margin-top:4px;">Cerrar sesión</button>
+    </div>
+
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="showSection('dashboard',this)">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio
+    </button>
+    <button class="nav-btn" onclick="showSection('gastos',this)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Gastos
+    </button>
+    <button class="nav-btn" onclick="showSection('asistencia',this)">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Personal
+    </button>
+    <button class="nav-btn" onclick="showSection('fotos',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Fotos
+    </button>
+    <button class="nav-btn" onclick="showSection('tareas',this)">
+      <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Tareas
+    </button>
+    <button class="nav-btn" onclick="showSection('ia',this)">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>IA
+    </button>
+  </nav>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, push, set, remove, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getAuth, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+// ═══ STATE ═══
+let db, auth, currentUser, currentObraId, currentObraData;
+let gastos=[], operarios=[], asistencias={}, fotos=[], tareas=[], obraConfig={}, aiHistory=[];
+let groqKey = localStorage.getItem('om_groqkey') || '';
+let userRole = 'operario';
+let unsubs = [];
+
+const catLabel = {material:'Material',labor:'Mano de obra',equip:'Equipo',other:'Otro'};
+const catBadge = {material:'badge-material',labor:'badge-labor',equip:'badge-equip',other:'badge-other'};
+const priColor = {alta:'#f06060',media:'#fb923c',baja:'#60a5fa'};
+const roleLabel = {admin:'Admin',capataz:'Capataz',operario:'Operario'};
+const roleBadge = {admin:'badge-admin',capataz:'badge-capataz',operario:'badge-operario'};
+
+// ═══ INIT FIREBASE ═══
+function initFirebase() {
+  const fbId = localStorage.getItem('om_fbid');
+  const fbKey = localStorage.getItem('om_fbkey');
+  if(!fbId || !fbKey) return false;
+  try {
+    const app = initializeApp({ apiKey:fbKey, authDomain:`${fbId}.firebaseapp.com`, databaseURL:`https://${fbId}-default-rtdb.firebaseio.com`, projectId:fbId });
+    db = getDatabase(app);
+    auth = getAuth(app);
+    onAuthStateChanged(auth, user => {
+      if(user) { currentUser = user; showObras(); }
+      else { showLogin(); }
+    });
+    return true;
+  } catch(e) { showToast('Error Firebase: '+e.message); return false; }
+}
+
+window.saveFbConfig = function() {}
+
+// ═══ AUTH ═══
+window.loginGoogle = async function() {
+  if(!auth){ showToast('Primero guardá la configuración de Firebase'); return; }
+  try {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
+window.loginEmail = async function() {
+  if(!auth){ showToast('Primero guardá la configuración de Firebase'); return; }
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if(!email||!pass){ showToast('Completá email y contraseña'); return; }
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
+window.registerEmail = async function() {
+  if(!auth){ showToast('Primero guardá la configuración de Firebase'); return; }
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if(!email||!pass){ showToast('Completá email y contraseña'); return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: email.split('@')[0] });
+    showToast('Cuenta creada ✓');
+  } catch(e) { showToast('Error: '+e.message); }
+}
+
+window.logout = async function() {
+  unsubAll();
+  currentObraId = null;
+  await signOut(auth);
+}
+
+// ═══ SCREENS ═══
+function showLogin() {
+  document.getElementById('screen-login').classList.add('active');
+  document.getElementById('screen-obras').classList.remove('active');
+  document.getElementById('app').style.display = 'none';
+}
+
+function showObras() {
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-obras').classList.add('active');
+  document.getElementById('app').style.display = 'none';
+  const name = currentUser.displayName || currentUser.email.split('@')[0];
+  const initials = name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('user-name-top').textContent = name;
+  document.getElementById('user-email-top').textContent = currentUser.email;
+  const avEl = document.getElementById('user-avatar-top');
+  if(currentUser.photoURL) avEl.innerHTML = `<img src="${currentUser.photoURL}" style="width:30px;height:30px;border-radius:50%;"/>`;
+  else avEl.textContent = initials;
+  loadMisObras();
+}
+
+window.volverObras = function() {
+  unsubAll();
+  currentObraId = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('screen-obras').classList.add('active');
+  loadMisObras();
+}
+
+// ═══ OBRAS ═══
+function loadMisObras() {
+  const uid = currentUser.uid;
+  onValue(ref(db,`usuarios/${uid}/obras`), async snap => {
+    const obraIds = snap.val() || {};
+    const el = document.getElementById('obras-lista');
+    if(!Object.keys(obraIds).length){
+      el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">No tenés obras aún. Creá una o unite con un código.</div>';
+      return;
+    }
+    el.innerHTML = '';
+    for(const [obraId, roleData] of Object.entries(obraIds)) {
+      const obraSnap = await get(ref(db,`obras/${obraId}/config`));
+      const obra = obraSnap.val() || {};
+      const role = typeof roleData === 'string' ? roleData : roleData.role || 'operario';
+      const div = document.createElement('div');
+      div.className = 'obra-card';
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-size:16px;font-weight:600;margin-bottom:4px;">${obra.nombre||'Sin nombre'}</div>
+            <div style="font-size:12px;color:var(--muted);">${obra.direccion||''}</div>
+          </div>
+          <span class="badge ${roleBadge[role]||'badge-operario'}">${roleLabel[role]||role}</span>
+        </div>
+        <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">
+          <div class="obra-code" style="font-size:13px;">${obraId.slice(-8).toUpperCase()}</div>
+          <button class="btn primary sm" onclick="entrarObra('${obraId}','${role}')">Entrar →</button>
+        </div>`;
+      el.appendChild(div);
+    }
+  }, {onlyOnce:true});
+}
+
+window.crearObra = async function() {
+  const nombre = document.getElementById('nueva-obra-nombre').value.trim();
+  const pin = document.getElementById('nueva-obra-pin').value.trim();
+  if(!nombre){ showToast('Poné un nombre para la obra'); return; }
+  if(!pin||pin.length<4){ showToast('El PIN debe tener 4 dígitos'); return; }
+  const uid = currentUser.uid;
+  const obraRef = push(ref(db,'obras'));
+  const obraId = obraRef.key;
+  await set(ref(db,`obras/${obraId}/config`), {
+    nombre, direccion: document.getElementById('nueva-obra-dir').value.trim(),
+    presupuesto:0, creadoPor:uid, fechaCreacion: new Date().toISOString().slice(0,10), pin
+  });
+  await set(ref(db,`obras/${obraId}/miembros/${uid}`), { role:'admin', nombre: currentUser.displayName||currentUser.email, email:currentUser.email, joined: Date.now() });
+  await set(ref(db,`usuarios/${uid}/obras/${obraId}`), { role:'admin' });
+  document.getElementById('nueva-obra-nombre').value='';
+  document.getElementById('nueva-obra-dir').value='';
+  showToast('Obra creada ✓');
+  entrarObra(obraId, 'admin');
+}
+
+window.unirseObra = async function() {
+  const codigo = document.getElementById('join-codigo').value.trim().toUpperCase();
+  if(!codigo){ showToast('Ingresá el código'); return; }
+  const uid = currentUser.uid;
+  // Buscar obra por código (últimos 8 chars del ID)
+  const obrasSnap = await get(ref(db,'obras'));
+  let obraId = null;
+  obrasSnap.forEach(c => { if(c.key.slice(-8).toUpperCase() === codigo.replace('OBRA-','')) obraId = c.key; });
+  if(!obraId){ showToast('Código incorrecto'); return; }
+  const existeSnap = await get(ref(db,`obras/${obraId}/miembros/${uid}`));
+  if(existeSnap.exists()){ entrarObra(obraId, existeSnap.val().role); return; }
+  // Check PIN
+  const pinInput = document.getElementById('join-pin').value.trim();
+  const obraConfigSnap = await get(ref(db,`obras/${obraId}/config`));
+  const obraPin = obraConfigSnap.val()?.pin;
+  if(obraPin && pinInput !== obraPin){ showToast('PIN incorrecto'); return; }
+  await set(ref(db,`obras/${obraId}/miembros/${uid}`), { role:'operario', nombre:currentUser.displayName||currentUser.email, email:currentUser.email, joined:Date.now() });
+  await set(ref(db,`usuarios/${uid}/obras/${obraId}`), { role:'operario' });
+  showToast('Te uniste a la obra ✓');
+  entrarObra(obraId, 'operario');
+}
+
+window.entrarObra = function(obraId, role) {
+  currentObraId = obraId;
+  userRole = role;
+  document.getElementById('screen-obras').classList.remove('active');
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('topbar-sub').textContent = (currentUser.displayName||currentUser.email.split('@')[0]) + ' · ' + (roleLabel[role]||role);
+  groqKey = localStorage.getItem('om_groqkey') || '';
+  document.getElementById('g-fecha').value = todayStr();
+  document.getElementById('a-fecha').value = todayStr();
+  applyRoleRestrictions();
+  subscribeObra();
+  showSection('dashboard');
+  loadAIChips();
+  // Share info
+  document.getElementById('share-code').textContent = 'OBRA-' + obraId.slice(-8).toUpperCase();
+  document.getElementById('share-link').textContent = window.location.href.split('?')[0];
+  // Load PIN
+  get(ref(db,`obras/${obraId}/config`)).then(s=>{ const p=s.val()?.pin; if(p) document.getElementById('share-pin').textContent=p; });
+  // Config user info
+  document.getElementById('cfg-user-info').textContent = (currentUser.displayName||currentUser.email) + ' · ' + (roleLabel[role]||role);
+  document.getElementById('cfg-groq').value = groqKey;
+}
+
+function applyRoleRestrictions() {
+  const isReadOnly = userRole === 'operario';
+  document.getElementById('gastos-form-wrap').style.display = isReadOnly ? 'none' : 'block';
+  document.getElementById('fotos-form-wrap').style.display = isReadOnly ? 'none' : 'block';
+  document.getElementById('tareas-form-wrap').style.display = isReadOnly ? 'none' : 'block';
+  document.getElementById('personal-form-wrap').style.display = userRole === 'admin' ? 'block' : 'none';
+  // Capataz can mark attendance but not add workers
+}
+
+// ═══ SUBSCRIBE ═══
+function unsubAll(){ unsubs.forEach(u=>u&&u()); unsubs=[]; gastos=[]; operarios=[]; asistencias={}; fotos=[]; tareas=[]; obraConfig={}; }
+
+function subscribeObra() {
+  unsubAll();
+  const base = `obras/${currentObraId}`;
+  unsubs.push(onValue(ref(db,`${base}/gastos`), snap=>{ gastos=[]; snap.forEach(c=>gastos.push({id:c.key,...c.val()})); gastos.reverse(); renderGastos(); renderDashboard(); }));
+  unsubs.push(onValue(ref(db,`${base}/operarios`), snap=>{ operarios=[]; snap.forEach(c=>operarios.push({id:c.key,...c.val()})); renderOperarios(); renderAsistencia(); }));
+  unsubs.push(onValue(ref(db,`${base}/asistencias`), snap=>{ asistencias=snap.val()||{}; renderAsistencia(); renderSemana(); }));
+  unsubs.push(onValue(ref(db,`${base}/fotos`), snap=>{ fotos=[]; snap.forEach(c=>fotos.push({id:c.key,...c.val()})); fotos.reverse(); renderFotos(); }));
+  unsubs.push(onValue(ref(db,`${base}/tareas`), snap=>{ tareas=[]; snap.forEach(c=>tareas.push({id:c.key,...c.val()})); tareas.reverse(); renderTareas(); }));
+  unsubs.push(onValue(ref(db,`${base}/config`), snap=>{ obraConfig=snap.val()||{}; renderDashboard(); document.getElementById('obra-nombre-top').textContent=obraConfig.nombre||'Obra'; document.getElementById('cfg-obra').value=obraConfig.nombre||''; document.getElementById('cfg-presup').value=obraConfig.presupuesto||''; document.getElementById('cfg-dir').value=obraConfig.direccion||''; }));
+  unsubs.push(onValue(ref(db,`${base}/miembros`), snap=>{ renderMiembros(snap.val()||{}); }));
+}
+
+// ═══ UTILS ═══
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmt(n){ return '$'+Number(n).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function obraRef(path){ return ref(db,`obras/${currentObraId}/${path}`); }
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+window.showSection = function(id, btn) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+// ═══ DASHBOARD ═══
+function renderDashboard() {
+  const total = gastos.reduce((a,g)=>a+g.monto,0);
+  const bycat={};gastos.forEach(g=>{bycat[g.cat]=(bycat[g.cat]||0)+g.monto;});
+  const hoy=todayStr(); const regHoy=asistencias[hoy]||{};
+  const pres=operarios.filter(o=>regHoy[o.id]==='present').length;
+  document.getElementById('dash-metrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Total gastado</div><div class="metric-val accent">${fmt(total)}</div></div>
+    <div class="metric"><div class="metric-label">Operarios</div><div class="metric-val">${operarios.length}</div></div>
+    <div class="metric"><div class="metric-label">Presentes hoy</div><div class="metric-val green">${pres}</div></div>
+    <div class="metric"><div class="metric-label">Fotos</div><div class="metric-val blue">${fotos.length}</div></div>`;
+  const presup=obraConfig.presupuesto||0;
+  const pEl=document.getElementById('dash-presupuesto');
+  if(presup>0){
+    const pct=Math.min(total/presup,1); const color=pct>0.9?'var(--red)':pct>0.7?'var(--accent)':'var(--green)';
+    pEl.innerHTML=`<div class="card"><div class="card-title">Presupuesto</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:3px;"><span>${(pct*100).toFixed(1)}% utilizado</span><span>${fmt(total)} / ${fmt(presup)}</span></div>
+      <div class="pres-bar-track"><div class="pres-bar-fill" style="width:${pct*100}%;background:${color};"></div></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px;">Disponible: <span style="color:${color}">${fmt(Math.max(0,presup-total))}</span></div></div>`;
+  } else { pEl.innerHTML=''; }
+  if(gastos.length>0){
+    const cats=['material','labor','equip','other']; const max=Math.max(...Object.values(bycat).filter(v=>v>0),1);
+    document.getElementById('dash-dist').style.display='block';
+    document.getElementById('dash-bars').innerHTML=cats.map(c=>{const val=bycat[c]||0;const pct=val/max;return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12px;"><span style="width:80px;color:var(--muted);text-align:right;">${catLabel[c]}</span><div style="flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;"><div style="width:${pct*100}%;height:100%;background:var(--accent);border-radius:3px;"></div></div><span style="width:65px;text-align:right;font-weight:500;">${fmt(val)}</span></div>`;}).join('');
+    document.getElementById('dash-recientes').style.display='block';
+    document.getElementById('dash-gastos-list').innerHTML=gastos.slice(0,4).map(g=>`<div class="list-item"><span class="badge ${catBadge[g.cat]}">${catLabel[g.cat]}</span><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${g.descripcion}</span><span style="color:var(--accent);font-weight:600;">${fmt(g.monto)}</span></div>`).join('');
+  }
+  const tUrg=tareas.filter(t=>t.estado!=='completada'&&t.prioridad==='alta');
+  document.getElementById('dash-tareas-urgentes').innerHTML=tUrg.length?`<div class="card"><div class="card-title">Tareas urgentes</div>${tUrg.slice(0,3).map(t=>`<div class="list-item"><div style="width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;"></div><span style="flex:1;">${t.titulo}</span>${t.responsable?`<span style="font-size:11px;color:var(--muted);">${t.responsable}</span>`:''}</div>`).join('')}</div>`:'';
+}
+
+// ═══ GASTOS ═══
+window.agregarGasto = async function() {
+  if(userRole==='operario'){ showToast('No tenés permiso para agregar gastos'); return; }
+  const desc=document.getElementById('g-desc').value.trim(); const monto=parseFloat(document.getElementById('g-monto').value);
+  if(!desc||isNaN(monto)||monto<=0){ showToast('Completá descripción y monto'); return; }
+  await push(obraRef('gastos'),{descripcion:desc,monto,cat:document.getElementById('g-cat').value,fecha:document.getElementById('g-fecha').value||todayStr(),proveedor:document.getElementById('g-prov').value.trim(),usuario:currentUser.displayName||currentUser.email,timestamp:Date.now()});
+  document.getElementById('g-desc').value=''; document.getElementById('g-monto').value=''; document.getElementById('g-prov').value='';
+  showToast('Gasto guardado ✓');
+}
+
+window.renderGastos = function() {
+  const filter=document.getElementById('g-filter').value;
+  const list=filter?gastos.filter(g=>g.cat===filter):gastos;
+  const el=document.getElementById('gastos-list');
+  if(!list.length){ el.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Sin gastos</div>'; return; }
+  el.innerHTML=list.map(g=>`<div class="list-item"><span class="badge ${catBadge[g.cat]}">${catLabel[g.cat]}</span><div style="flex:1;min-width:0;"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${g.descripcion}</div><div style="font-size:10px;color:var(--muted);">${g.fecha}${g.usuario?' · '+g.usuario:''}</div></div><span style="color:var(--accent);font-weight:600;white-space:nowrap;">${fmt(g.monto)}</span>${userRole!=='operario'?`<button class="btn sm danger" onclick="elimGasto('${g.id}')">✕</button>`:''}</div>`).join('');
+}
+window.elimGasto=async function(id){ if(!confirm('¿Eliminar?'))return; await remove(obraRef('gastos/'+id)); }
+
+// ═══ OPERARIOS ═══
+window.agregarOperario = async function() {
+  if(userRole!=='admin'){ showToast('Solo el admin puede agregar operarios'); return; }
+  const nombre=document.getElementById('w-nombre').value.trim(); if(!nombre){ showToast('Ingresá el nombre'); return; }
+  await push(obraRef('operarios'),{nombre,rol:document.getElementById('w-rol').value.trim()||'Operario',jornal:parseFloat(document.getElementById('w-jornal').value)||0,telefono:document.getElementById('w-tel').value.trim()});
+  document.getElementById('w-nombre').value=''; document.getElementById('w-rol').value=''; document.getElementById('w-jornal').value=''; document.getElementById('w-tel').value='';
+  showToast('Operario agregado ✓');
+}
+
+function renderOperarios() {
+  const el=document.getElementById('operarios-list');
+  if(!operarios.length){ el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">Sin operarios</div>'; return; }
+  el.innerHTML=operarios.map(op=>{const ini=op.nombre.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();return`<div class="list-item"><div class="avatar">${ini}</div><div style="flex:1;"><div style="font-weight:500;">${op.nombre}</div><div style="font-size:11px;color:var(--muted);">${op.rol}${op.jornal?' · '+fmt(op.jornal)+'/día':''}</div></div>${userRole==='admin'?`<button class="btn sm danger" onclick="elimOp('${op.id}')">✕</button>`:''}</div>`;}).join('');
+}
+window.elimOp=async function(id){ if(!confirm('¿Eliminar?'))return; await remove(obraRef('operarios/'+id)); }
+
+// ═══ ASISTENCIA ═══
+window.setAsistTab=function(tab,btn){ document.getElementById('asist-hoy').style.display=tab==='hoy'?'block':'none'; document.getElementById('asist-semana').style.display=tab==='semana'?'block':'none'; document.getElementById('asist-personal').style.display=tab==='personal'?'block':'none'; document.querySelectorAll('#sec-asistencia .tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); if(tab==='semana')renderSemana(); }
+window.cambiarFecha=function(d){ const el=document.getElementById('a-fecha'); const dt=new Date(el.value+'T00:00:00'); dt.setDate(dt.getDate()+d); el.value=dt.toISOString().slice(0,10); renderAsistencia(); }
+
+window.renderAsistencia=function() {
+  const fecha=document.getElementById('a-fecha').value||todayStr();
+  const reg=asistencias[fecha]||{};
+  const pres=operarios.filter(o=>reg[o.id]==='present').length;
+  const medio=operarios.filter(o=>reg[o.id]==='half').length;
+  const aus=operarios.filter(o=>reg[o.id]==='absent').length;
+  document.getElementById('asist-metrics').innerHTML=`<div class="metric"><div class="metric-label">Presentes</div><div class="metric-val green">${pres}</div></div><div class="metric"><div class="metric-label">Medio día</div><div class="metric-val accent">${medio}</div></div><div class="metric"><div class="metric-label">Ausentes</div><div class="metric-val red">${aus}</div></div>`;
+  const el=document.getElementById('asist-list');
+  if(!operarios.length){ el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">Sin operarios. Agregá desde "Personal".</div>'; return; }
+  const canMark = userRole==='admin'||userRole==='capataz';
+  el.innerHTML=operarios.map(op=>{const ini=op.nombre.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();const est=reg[op.id]||'';return`<div class="att-row"><div class="avatar">${ini}</div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${op.nombre}</div><div style="font-size:10px;color:var(--muted);">${op.rol}</div></div>${canMark?`<div class="att-btns"><button class="att-btn ${est==='present'?'present':''}" onclick="setAtt('${op.id}','present','${fecha}')">P</button><button class="att-btn ${est==='half'?'half':''}" onclick="setAtt('${op.id}','half','${fecha}')">½</button><button class="att-btn ${est==='absent'?'absent':''}" onclick="setAtt('${op.id}','absent','${fecha}')">A</button></div>`:`<span style="font-size:12px;color:${est==='present'?'var(--green)':est==='absent'?'var(--red)':'var(--muted)'};">${est||'—'}</span>`}</div>`;}).join('');
+  let costo=0; operarios.forEach(o=>{ if(reg[o.id]==='present')costo+=o.jornal||0; if(reg[o.id]==='half')costo+=(o.jornal||0)/2; });
+  const cEl=document.getElementById('costo-jornales'); if(costo>0){cEl.style.display='flex';document.getElementById('costo-jornales-val').textContent=fmt(costo);}else{cEl.style.display='none';}
+}
+
+window.setAtt=async function(opId,estado,fecha){
+  const cur=(asistencias[fecha]||{})[opId];
+  if(cur===estado) await remove(obraRef('asistencias/'+fecha+'/'+opId));
+  else await set(obraRef('asistencias/'+fecha+'/'+opId),estado);
+}
+
+function renderSemana() {
+  const hoy=new Date(); const day=hoy.getDay(); const dToMon=(day+6)%7;
+  const mon=new Date(hoy); mon.setDate(hoy.getDate()-dToMon);
+  const dias=Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d.toISOString().slice(0,10);});
+  const dn=['L','M','M','J','V','S','D'];
+  const el=document.getElementById('semana-tabla');
+  if(!operarios.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">Sin operarios</div>';return;}
+  el.innerHTML=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;"><thead><tr><th style="text-align:left;padding:5px 3px;color:var(--muted);font-weight:400;border-bottom:1px solid var(--border);">Operario</th>${dias.map((d,i)=>`<th style="text-align:center;padding:5px 2px;color:${d===todayStr()?'var(--accent)':'var(--muted)'};font-weight:400;border-bottom:1px solid var(--border);">${dn[i]}<br><span style="font-size:9px;">${d.slice(8)}</span></th>`).join('')}<th style="text-align:center;padding:5px 3px;color:var(--muted);font-weight:400;border-bottom:1px solid var(--border);">Días</th></tr></thead><tbody>${operarios.map(op=>{let t=0;const cells=dias.map(d=>{const est=(asistencias[d]||{})[op.id];if(est==='present')t+=1;if(est==='half')t+=0.5;const s=est==='present'?`<span style="color:var(--green)">✓</span>`:est==='half'?`<span style="color:var(--accent)">½</span>`:est==='absent'?`<span style="color:var(--red)">✗</span>`:`<span style="color:var(--border2)">·</span>`;return`<td style="text-align:center;padding:6px 2px;border-bottom:1px solid var(--border);">${s}</td>`;}).join('');return`<tr><td style="padding:6px 3px;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap;overflow:hidden;max-width:70px;text-overflow:ellipsis;">${op.nombre.split(' ')[0]}</td>${cells}<td style="text-align:center;padding:6px 3px;border-bottom:1px solid var(--border);font-weight:600;color:var(--accent);">${t%1===0?t:t.toFixed(1)}</td></tr>`;}).join('')}</tbody></table></div>`;
+}
+
+// ═══ FOTOS ═══
+window.agregarFoto=async function(){
+  if(userRole==='operario'){showToast('No tenés permiso');return;}
+  const desc=document.getElementById('f-desc').value.trim(); const file=document.getElementById('f-file').files[0];
+  if(!file||!desc){showToast('Necesitás descripción y foto');return;}
+  showToast('Guardando...');
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const img=new Image(); img.onload=async()=>{
+      const canvas=document.createElement('canvas'); const max=600; let w=img.width,h=img.height;
+      if(w>max){h=h*max/w;w=max;} if(h>max){w=w*max/h;h=max;}
+      canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);
+      await push(obraRef('fotos'),{descripcion:desc,sector:document.getElementById('f-sector').value.trim()||'General',fecha:todayStr(),imageData:canvas.toDataURL('image/jpeg',0.65),usuario:currentUser.displayName||currentUser.email});
+      document.getElementById('f-desc').value='';document.getElementById('f-sector').value='';document.getElementById('f-file').value='';
+      showToast('Foto guardada ✓');
+    }; img.src=e.target.result;
+  }; reader.readAsDataURL(file);
+}
+
+window.renderFotos=function(){
+  const search=(document.getElementById('f-search').value||'').toLowerCase();
+  const filtered=fotos.filter(f=>!search||f.descripcion.toLowerCase().includes(search)||f.sector.toLowerCase().includes(search));
+  document.getElementById('fotos-count').textContent=fotos.length;
+  const grid=document.getElementById('fotos-grid'); const empty=document.getElementById('fotos-empty');
+  if(!filtered.length){grid.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  grid.innerHTML=filtered.map(f=>`<div class="photo-card"><img src="${f.imageData}" alt="${f.descripcion}" loading="lazy"/><div class="photo-meta"><strong style="color:var(--text);display:block;font-size:12px;">${f.descripcion}</strong>${f.sector} · ${f.fecha}</div></div>`).join('');
+}
+
+// ═══ TAREAS ═══
+window.agregarTarea=async function(){
+  if(userRole==='operario'){showToast('No tenés permiso');return;}
+  const titulo=document.getElementById('t-titulo').value.trim(); if(!titulo){showToast('Ingresá el título');return;}
+  await push(obraRef('tareas'),{titulo,prioridad:document.getElementById('t-pri').value,responsable:document.getElementById('t-resp').value.trim(),estado:'pendiente',fecha:todayStr(),usuario:currentUser.displayName||currentUser.email});
+  document.getElementById('t-titulo').value='';document.getElementById('t-resp').value='';
+  showToast('Tarea agregada ✓');
+}
+
+function renderTareas(){
+  const el=document.getElementById('tareas-list');
+  if(!tareas.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">Sin tareas</div>';return;}
+  el.innerHTML=tareas.map(t=>`<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border);"><div style="width:20px;height:20px;border-radius:50%;border:1.5px solid ${t.estado==='completada'?'var(--green)':'var(--border2)'};display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;background:${t.estado==='completada'?'var(--green)':'transparent'};flex-shrink:0;" onclick="toggleTarea('${t.id}','${t.estado}')">${t.estado==='completada'?'✓':''}</div><div style="flex:1;min-width:0;"><div style="font-size:13px;${t.estado==='completada'?'text-decoration:line-through;color:var(--muted);':''}">${t.titulo}</div>${t.responsable?`<div style="font-size:10px;color:var(--muted);">${t.responsable}</div>`:''}</div><div style="width:7px;height:7px;border-radius:50%;background:${priColor[t.prioridad]||'var(--muted)'};flex-shrink:0;"></div>${userRole!=='operario'?`<button class="btn sm danger" onclick="elimTarea('${t.id}')">✕</button>`:''}</div>`).join('');
+}
+window.toggleTarea=async function(id,est){ await update(obraRef('tareas/'+id),{estado:est==='completada'?'pendiente':'completada'}); }
+window.elimTarea=async function(id){ await remove(obraRef('tareas/'+id)); }
+
+// ═══ MIEMBROS ═══
+function renderMiembros(miembros) {
+  const el=document.getElementById('cfg-miembros');
+  const entries=Object.entries(miembros);
+  if(!entries.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);">Sin miembros</div>';return;}
+  el.innerHTML=entries.map(([uid,m])=>`<div class="list-item"><div class="avatar" style="font-size:10px;">${(m.nombre||'?').slice(0,2).toUpperCase()}</div><div style="flex:1;"><div style="font-size:13px;font-weight:500;">${m.nombre||m.email||uid}</div><div style="font-size:11px;color:var(--muted);">${m.email||''}</div></div>${userRole==='admin'&&uid!==currentUser.uid?`<select onchange="cambiarRol('${uid}',this.value)" style="width:auto;font-size:12px;padding:3px 6px;"><option ${m.role==='admin'?'selected':''} value="admin">Admin</option><option ${m.role==='capataz'?'selected':''} value="capataz">Capataz</option><option ${m.role==='operario'?'selected':''} value="operario">Operario</option></select>`:`<span class="badge ${roleBadge[m.role]||'badge-operario'}">${roleLabel[m.role]||m.role}</span>`}</div>`).join('');
+}
+
+window.cambiarRol=async function(uid,role){
+  await update(obraRef('miembros/'+uid),{role});
+  await set(ref(db,`usuarios/${uid}/obras/${currentObraId}`),{role});
+  showToast('Rol actualizado ✓');
+}
+
+// ═══ CONFIG ═══
+window.guardarConfigObra=async function(){
+  if(userRole!=='admin'){showToast('Solo el admin puede editar la configuración');return;}
+  await set(obraRef('config'),{...obraConfig,nombre:document.getElementById('cfg-obra').value.trim(),presupuesto:parseFloat(document.getElementById('cfg-presup').value)||0,direccion:document.getElementById('cfg-dir').value.trim()});
+  showToast('Configuración guardada ✓');
+}
+
+window.guardarGroqKey=function(){
+  groqKey=document.getElementById('cfg-groq').value.trim();
+  localStorage.setItem('om_groqkey',groqKey);
+  showToast('Key guardada ✓');
+}
+
+window.cambiarPin=async function(){
+  if(userRole!=='admin'){showToast('Solo el admin puede cambiar el PIN');return;}
+  const pin=prompt('Nuevo PIN (4 dígitos):');
+  if(!pin||pin.length!==4||isNaN(pin)){showToast('PIN inválido — debe ser 4 dígitos');return;}
+  await update(obraRef('config'),{pin});
+  document.getElementById('share-pin').textContent=pin;
+  showToast('PIN actualizado ✓');
+}
+
+window.copiarCodigo=function(){
+  const code=document.getElementById('share-code').textContent;
+  navigator.clipboard.writeText(code).then(()=>showToast('Código copiado ✓'));
+}
+
+window.copiarLinkCompleto=function(){
+  navigator.clipboard.writeText(window.location.href.split('?')[0]).then(()=>showToast('Link copiado ✓'));
+}
+
+window.testIA=async function(){
+  if(!groqKey){showToast('Primero guardá tu API Key de Groq');return;}
+  showToast('Probando...');
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:20,messages:[{role:'user',content:'Respondé solo: OK'}]})});
+    const data=await res.json();
+    if(data.choices?.[0]?.message?.content)showToast('✓ IA conectada correctamente');
+    else showToast('Error: '+(data.error?.message||'sin respuesta'));
+  }catch(e){showToast('Error: '+e.message);}
+}
+
+// ═══ IA ═══
+const chips=['Analizá mis gastos','¿Cuánto en materiales?','Resumen de la obra','¿Quiénes faltaron?','Alertas de sobrecosto','Costo del personal'];
+function loadAIChips(){ document.getElementById('ai-chips').innerHTML=chips.map(c=>`<button class="ai-chip" onclick="sendAI('${c}')">${c}</button>`).join(''); }
+
+window.sendAI=async function(msg){
+  const input=document.getElementById('ai-input'); const texto=msg||input.value.trim();
+  if(!texto)return;
+  if(!groqKey){showToast('Configurá tu API Key de Groq en ⚙️');return;}
+  input.value=''; addAIMsg('user',texto);
+  const tid='think-'+Date.now(); addAIMsg('assistant','Analizando...',tid,true);
+  aiHistory.push({role:'user',content:texto});
+  try{
+    const total=gastos.reduce((a,g)=>a+g.monto,0);
+    const bycat={};gastos.forEach(g=>{bycat[g.cat]=(bycat[g.cat]||0)+g.monto;});
+    const hoy=todayStr();const reg=asistencias[hoy]||{};
+    const pres=operarios.filter(o=>reg[o.id]==='present').map(o=>o.nombre);
+    const aus=operarios.filter(o=>reg[o.id]==='absent').map(o=>o.nombre);
+    const sys=`Sos el asistente IA de ObraManager. Obra: "${obraConfig.nombre||''}". 
+GASTOS: Total=${fmt(total)}, Materiales=${fmt(bycat.material||0)}, ManoObra=${fmt(bycat.labor||0)}, Equipos=${fmt(bycat.equip||0)}, Registros=${gastos.length}
+PRESUPUESTO: ${obraConfig.presupuesto>0?fmt(obraConfig.presupuesto)+', Restante: '+fmt(obraConfig.presupuesto-total):'No definido'}
+PERSONAL: ${operarios.length} operarios. Presentes hoy: ${pres.join(', ')||'ninguno'}. Ausentes: ${aus.join(', ')||'ninguno'}.
+FOTOS: ${fotos.length}. TAREAS: ${tareas.length} (${tareas.filter(t=>t.estado!=='completada').length} pendientes).
+Respondé en español argentino, conciso y práctico.`;
+    const messages=[{role:'system',content:sys},...aiHistory.slice(-12)];
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:800,messages})});
+    const data=await res.json();
+    const reply=data.choices?.[0]?.message?.content||data.error?.message||'Sin respuesta';
+    removeAIMsg(tid);addAIMsg('assistant',reply);
+    aiHistory.push({role:'assistant',content:reply});
+    if(aiHistory.length>20)aiHistory=aiHistory.slice(-20);
+  }catch(e){removeAIMsg(tid);addAIMsg('assistant','Error: '+e.message);}
+}
+
+function addAIMsg(role,text,id,thinking){
+  const div=document.createElement('div'); div.className='ai-msg '+role+(thinking?' thinking':'');
+  if(id)div.id=id; div.textContent=text;
+  const msgs=document.getElementById('ai-messages'); msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
+}
+function removeAIMsg(id){const el=document.getElementById(id);if(el)el.remove();}
+
+// ═══ CONFIG ═══
+const FIREBASE_PROJECT_ID = 'obraprueba-4cf5e';
+const FIREBASE_API_KEY = 'AIzaSyCKoVJQxKJJsrSXflAACHkwE4Fz8D28JC0';
+
+// ═══ AUTO LOGIN ═══
+localStorage.setItem('om_fbid', FIREBASE_PROJECT_ID);
+localStorage.setItem('om_fbkey', FIREBASE_API_KEY);
+initFirebase();
+</script>
+</body>
+</html>
